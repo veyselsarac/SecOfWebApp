@@ -18,17 +18,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    /**
-     * Kullanıcı kaydı (signup).
-     * Artık @RequestBody ile JSON'dan okuyoruz.
-     *
-     * Örnek POST isteği (JSON):
-     * {
-     *   "userName": "john",
-     *   "email": "john@example.com",
-     *   "password": "123456"
-     * }
-     */
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@RequestBody User requestUser) {
         // Servis katmanında var olan metodu çağırıyoruz.
@@ -45,10 +34,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
     }
 
-    /**
-     * Oturum açmış kullanıcının bilgilerini döndürür.
-     * Örnek: GET /users/me
-     */
+
     @GetMapping("/me")
     public ResponseEntity<User> getAuthenticatedUser() {
         try {
@@ -59,10 +45,7 @@ public class UserController {
         }
     }
 
-    /**
-     * Kullanıcı adından kullanıcı bilgisi getirme.
-     * Örnek: GET /users/john
-     */
+
     @GetMapping("/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
         try {
@@ -73,15 +56,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Login endpointi. Artık @RequestBody ile JSON'dan okuyoruz.
-     *
-     * Örnek POST isteği (JSON):
-     * {
-     *   "userName": "john",
-     *   "password": "123456"
-     * }
-     */
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody User requestUser) {
         try {
