@@ -1,16 +1,13 @@
 package com.saracveysel.security.users.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
+import java.util.List;
 
 @Data
 @ToString
@@ -46,6 +43,9 @@ public class User {
     @NotNull(message = "Role must not be null")
     @NotEmpty(message = "Role must not be empty")
     private String role;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Books> book;
 
     // --- GETTERS & SETTERS ---
 

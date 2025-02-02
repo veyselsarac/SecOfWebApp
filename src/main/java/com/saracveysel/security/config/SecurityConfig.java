@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,9 +17,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
@@ -28,29 +32,47 @@ public class SecurityConfig {
 
         return http
 
-                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF: Daha güvenli bir seçenek için Cookie bazlı CSRF koruması ekleniyor
+                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 
-                .authorizeHttpRequests(authorize -> authorize
-                        // İsteğe göre izin verilecek endpointler
+                // Yetkilendirme Kuralları
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/signup", "/login", "/login.html").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/books/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
 
-
+                // Kullanıcı Detay Servisi
                 .userDetailsService(userDetailsService)
 
-
+                // Basic Authentication (REST API için)
                 .httpBasic(Customizer.withDefaults())
 
-                .formLogin(AbstractHttpConfigurer::disable)
-
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
+                // Form Login Ayarları (Eğer REST API kullanıyorsan kapalı kalabilir)
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .permitAll()
                 )
+
+                // Session Yönetimi
+                .sessionManagement(session -> session
+                        .sessionFixation().migrateSession() // Yeni oturum oluşturur, eski oturumu geçersiz kılar
+                        .invalidSessionUrl("/login?expired") // Oturum süresi dolduğunda yönlendirme
+                        .maximumSessions(1) // Aynı anda sadece 1 oturum açık olabilir
+                        .maxSessionsPreventsLogin(false) // Yeni giriş yapıldığında eski girişleri geçersiz yapar
+                )
+
+                // Logout İşlemi
+                .logout(logout -> logout
+                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                        .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true) // Kullanıcı çıkınca oturum sil
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID") // Çerez temizleme
+                )
+
                 .build();
     }
 
